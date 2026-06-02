@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 from backup_providers.base import BackupContext
-from backup_providers.common import ensure_parent, safe_host_dir, split_csv
+from backup_providers.common import ensure_parent, safe_host_dir, sanitize_command_output, split_csv
 from core.logging import get_logger
 
 logger = get_logger("mysql.backup_provider")
@@ -80,7 +80,7 @@ class MySqlBackupProvider:
         )
 
         if result.returncode != 0:
-            message: str = result.stderr.strip() or result.stdout.strip() or "MySQL database list failed"
+            message: str = sanitize_command_output(result.stderr.strip() or result.stdout.strip() or "MySQL database list failed")
             logger.error("MySQL database discovery failed: returncode=%s error=%s", result.returncode, message)
             raise RuntimeError(message)
 
@@ -104,6 +104,6 @@ class MySqlBackupProvider:
             logger.info("MySQL command finished: executable=%s returncode=%s", command[0], result.returncode)
             return
 
-        message: str = result.stderr.strip() if result.stderr else "MySQL backup failed"
+        message: str = sanitize_command_output(result.stderr.strip() if result.stderr else "MySQL backup failed")
         logger.error("MySQL command failed: executable=%s returncode=%s error=%s", command[0], result.returncode, message)
         raise RuntimeError(message)

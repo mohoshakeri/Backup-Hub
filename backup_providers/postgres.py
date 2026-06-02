@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 from backup_providers.base import BackupContext
-from backup_providers.common import ensure_parent, safe_host_dir, split_csv
+from backup_providers.common import ensure_parent, safe_host_dir, sanitize_command_output, split_csv
 from core.logging import get_logger
 
 logger = get_logger("postgres.backup_provider")
@@ -99,6 +99,6 @@ class PostgresBackupProvider:
             logger.info("Postgres command finished: executable=%s returncode=%s", command[0], result.returncode)
             return result
 
-        message: str = result.stderr.strip() or result.stdout.strip() or "Postgres backup failed"
+        message: str = sanitize_command_output(result.stderr.strip() or result.stdout.strip() or "Postgres backup failed")
         logger.error("Postgres command failed: executable=%s returncode=%s error=%s", command[0], result.returncode, message)
         raise RuntimeError(message)
