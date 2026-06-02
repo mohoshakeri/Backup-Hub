@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد | Backup Hub{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block content %}
+<main class="dashboard-shell">
+    <header class="dashboard-header">
+        <div class="brand-lockup compact">
+            {% if logo_url %}
+                <img class="brand-logo" src="{{ logo_url }}" alt="Backup Hub">
+            {% else %}
+                <div class="brand-logo brand-logo-text">BH</div>
+            {% endif %}
+            <div>
+                <p class="eyebrow">Backup Hub</p>
+                <h1>بکاپ‌های آماده دانلود</h1>
+            </div>
+        </div>
+        <form method="post" action="/logout">
+            <button class="secondary-button" type="submit">خروج</button>
+        </form>
+    </header>
+
+    {% if error_message %}
+        <div class="alert alert-danger">{{ error_message }}</div>
+    {% endif %}
+
+    <section class="summary-grid" aria-label="Backup summary">
+        <article class="summary-card">
+            <span>تعداد بکاپ‌ها</span>
+            <strong>{{ backups|length }}</strong>
+        </article>
+        <article class="summary-card">
+            <span>حجم کل</span>
+            <strong>{{ total_size }}</strong>
+        </article>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <p class="eyebrow">Encrypted Archives</p>
+                <h2>لیست بکاپ‌ها</h2>
+            </div>
+            <span class="secure-badge">TOTP Required</span>
+        </div>
+
+        {% if backups %}
+            <div class="backup-list">
+                {% for backup in backups %}
+                    <article class="backup-item">
+                        <div class="backup-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="3" width="20" height="5" rx="1.5"/>
+                                <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/>
+                                <path d="M10 12h4"/>
+                            </svg>
+                        </div>
+                        <div class="backup-meta">
+                            <strong>{{ backup.name }}</strong>
+                            <span>{{ backup.modified }} · {{ backup.size }}</span>
+                        </div>
+                        <button
+                            class="primary-button"
+                            type="button"
+                            data-download-action="{{ backup.download_url }}"
+                            data-download-name="{{ backup.name }}"
+                        >
+                            دانلود
+                        </button>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 8h14M5 8a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2M5 8l1.5-3h11L19 8"/>
+                        <line x1="12" y1="12" x2="12" y2="16"/>
+                        <polyline points="10 14 12 16 14 14"/>
+                    </svg>
+                </div>
+                <h3>هنوز بکاپی ساخته نشده است</h3>
+                <p>بعد از اجرای کران یا دستور دستی، فایل‌های رمزنگاری‌شده اینجا نمایش داده می‌شوند.</p>
+            </div>
+        {% endif %}
+    </section>
+</main>
+
+<dialog class="totp-dialog" id="totpDialog">
+    <form method="post" data-loading-form>
+        <div class="dialog-header">
+            <span class="secure-badge">2FA</span>
+            <button class="icon-button" value="cancel" formmethod="dialog" aria-label="بستن">×</button>
+        </div>
+        <h2>تایید دانلود</h2>
+        <p id="downloadName">برای دانلود این بکاپ، کد TOTP شش رقمی را وارد کن.</p>
+        <label class="field">
+            <span>کد TOTP</span>
+            <input name="totp" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+        <div class="dialog-actions">
+            <button class="secondary-button" value="cancel" formmethod="dialog">انصراف</button>
+            <button class="primary-button" type="submit">
+                <span>دانلود امن</span>
+                <b class="loader"></b>
+            </button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}

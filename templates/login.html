@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}ورود | Backup Hub{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<main class="auth-layout">
+    <section class="auth-visual" aria-label="Backup Hub">
+        <div class="brand-lockup">
+            {% if logo_url %}
+                <img class="brand-logo" src="{{ logo_url }}" alt="Backup Hub">
+            {% else %}
+                <div class="brand-logo brand-logo-text">BH</div>
+            {% endif %}
+            <div>
+                <p class="eyebrow">Encrypted Backup Center</p>
+                <h1>Backup Hub</h1>
+            </div>
+        </div>
+        <div class="status-board">
+            <div class="status-pill">
+                <span class="dot"></span>
+                AES Protected Archives
+            </div>
+            <div class="metric-card">
+                <span>مسیر خروجی</span>
+                <strong>fs/backups</strong>
+            </div>
+            <div class="metric-card">
+                <span>زمان‌بندی</span>
+                <strong>Supercronic</strong>
+            </div>
+            <div class="metric-card wide">
+                <span>دانلود امن</span>
+                <strong>Password + TOTP</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-card">
+        <div class="section-heading">
+            <p class="eyebrow">Secure Sign In</p>
+            <h2>ورود به پنل بکاپ</h2>
+            <p>بعد از ورود، دانلود هر بکاپ فقط با تایید TOTP انجام می‌شود.</p>
+        </div>
+
+        {% if error_message %}
+            <div class="alert alert-danger">{{ error_message }}</div>
+        {% endif %}
+
+        <form class="form-stack" method="post" action="/login" data-loading-form>
+            <label class="field">
+                <span>نام کاربری</span>
+                <input name="username" autocomplete="username" required>
+            </label>
+            <label class="field">
+                <span>رمز عبور</span>
+                <input name="password" type="password" autocomplete="current-password" required>
+            </label>
+            <button class="primary-button full" type="submit">
+                <span>ورود</span>
+                <b class="loader"></b>
+            </button>
+        </form>
+    </section>
+</main>
+{% endblock %}
