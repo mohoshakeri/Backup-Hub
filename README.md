@@ -10,6 +10,7 @@ Backup Hub is a small FastAPI application for scheduled, encrypted backups with 
 - AES-encrypted ZIP archives
 - Password-based web login
 - TOTP verification before every download
+- Temporary JWT download links with a 10-minute lifetime
 - Backup retention with automatic deletion of the oldest archive
 - Temporary workspace cleanup before and after every backup run
 - Step-by-step logs for backup phases, database dump phases, archive creation, cleanup, retention, and failures

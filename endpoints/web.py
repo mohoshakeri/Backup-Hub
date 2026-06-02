@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 
 from services.auth import create_session_token, validate_password, validate_session_token, validate_totp
 from services.backups import get_backup_or_none, list_backups
+from services.download_tokens import create_download_token, validate_download_token
 from utils.config import COOKIE_SECURE, FAVICON_URL, LOGO_URL, PROJECT_ROOT, SESSION_COOKIE
 
 router: APIRouter = APIRouter(tags=["Web"])
@@ -54,7 +55,7 @@ async def logout() -> Response:
 
 
 @router.post("/backups/{filename}/download")
-async def download_backup(filename: str, request: Request) -> Response:
+async def create_download_link(filename: str, request: Request) -> Response:
     if not _is_authenticated(request=request):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -79,10 +80,25 @@ async def download_backup(filename: str, request: Request) -> Response:
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
+    token: str = create_download_token(filename=backup_path.name)
+    download_url: str = "/backups/{}/download?token={}".format(backup_path.name, token)
+    return RedirectResponse(url=download_url, status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/backups/{filename}/download")
+async def download_backup(filename: str, token: str = "") -> Response:
+    if not validate_download_token(token=token, filename=filename):
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+    backup_path: Path | None = get_backup_or_none(filename=filename)
+
+    if not backup_path:
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
     return FileResponse(
         path=backup_path,
         filename=backup_path.name,
-        media_type="application/zip",
+        media_type="application/octet-stream",
     )
 
 
