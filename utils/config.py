@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Callable
 
-from CONSTANTS import DEFAULT_BACKUP_CRON, DEFAULT_MAX_BACKUPS, DEFAULT_PORT
+from CONSTANTS import DEFAULT_BACKUP_CRON, DEFAULT_MAX_BACKUPS, DEFAULT_PORT, DEFAULT_ICON, DEFAULT_LOGO
 
 try:
     from dotenv import load_dotenv
@@ -22,8 +22,8 @@ DEBUG: bool = os.getenv("DEBUG", "NO").upper() == "YES"
 PORT: int = int(os.getenv("PORT", str(DEFAULT_PORT)))
 BASE_URL: str = os.getenv("BASE_URL", "http://localhost:{}".format(PORT)).strip()
 CORS_ALLOWEDS: list[str] = [item.strip() for item in os.getenv("CORS_ALLOWEDS", "").split(",") if item.strip()]
-LOGO_URL: str = os.getenv("BACKUP_HUB_LOGO_URL", "").strip()
-FAVICON_URL: str = os.getenv("BACKUP_HUB_FAVICON_URL", "").strip()
+LOGO_URL: str = os.getenv("BACKUP_HUB_LOGO_URL", DEFAULT_LOGO).strip()
+FAVICON_URL: str = os.getenv("BACKUP_HUB_FAVICON_URL", DEFAULT_ICON).strip()
 BACKUP_CRON: str = os.getenv("BACKUP_HUB_CRON", DEFAULT_BACKUP_CRON).strip()
 MAX_BACKUPS: int = int(os.getenv("BACKUP_HUB_MAX_BACKUPS", str(DEFAULT_MAX_BACKUPS)))
 AES_ZIP_KEY: str = os.getenv("BACKUP_HUB_AES_ZIP_KEY", "").strip()
