@@ -10,6 +10,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_INDEX_URL=https://mirror-pypi.runflare.com/simple \
     PORT=80 \
+    UVICORN_PORT=8000 \
+    BACKUP_HUB_USE_NGINX_ACCEL=YES \
+    BACKUP_HUB_STRICT_SECURITY=YES \
     BACKUP_HUB_CRON="0 3 * * *" \
     TZ=Asia/Tehran \
     SUPERCRONIC_URL=https://iamshakeri.ir/fs/supercronic-linux-amd64-0.2.39 \
@@ -27,7 +30,7 @@ RUN sed -i 's/deb.debian.org/mirror-linux.runflare.com/g' /etc/apt/sources.list.
 
 # Install System Dependencies
 RUN apt-get update -o Acquire::Check-Valid-Until=false \
-    && apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client postgresql-client tzdata unzip -o Acquire::Check-Valid-Until=false \
+    && apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client nginx postgresql-client tzdata unzip -o Acquire::Check-Valid-Until=false \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -57,6 +60,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy Application
 COPY . .
 
+# Configure Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
 # Create Storage Directories
 RUN mkdir -p /app/fs/tmp /app/fs/backups
 
@@ -64,4 +70,4 @@ RUN mkdir -p /app/fs/tmp /app/fs/backups
 EXPOSE 80
 
 # Start Cron And Web Server
-CMD ["sh", "-c", "printf '%s python -m tasks.backup\\n' \"${BACKUP_HUB_CRON:-0 3 * * *}\" > /tmp/backup.cron && supercronic /tmp/backup.cron & uvicorn main:app --host 0.0.0.0 --port ${PORT:-80} --timeout-keep-alive ${BACKUP_HUB_SERVER_KEEP_ALIVE_SECONDS:-120}"]
+CMD ["sh", "-c", "printf '%s python -m tasks.backup\\n' \"${BACKUP_HUB_CRON:-0 3 * * *}\" > /tmp/backup.cron && supercronic /tmp/backup.cron & uvicorn main:app --host 127.0.0.1 --port ${UVICORN_PORT:-8000} --timeout-keep-alive ${BACKUP_HUB_SERVER_KEEP_ALIVE_SECONDS:-120} --no-access-log & nginx -g 'daemon off;'"]

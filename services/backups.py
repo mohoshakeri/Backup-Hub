@@ -20,15 +20,24 @@ def list_backups() -> list[Path]:
 
 
 def get_backup_or_none(filename: str) -> Path | None:
+    if filename != Path(filename).name:
+        return None
+
     backup_path: Path = BACKUPS_DIR / filename
+    backups_dir: Path = BACKUPS_DIR.resolve()
 
-    if not backup_path.is_file():
+    try:
+        resolved_backup_path: Path = backup_path.resolve(strict=True)
+    except FileNotFoundError:
         return None
 
-    if backup_path.parent.resolve() != BACKUPS_DIR.resolve():
+    if resolved_backup_path.parent != backups_dir:
         return None
 
-    return backup_path
+    if not resolved_backup_path.is_file():
+        return None
+
+    return resolved_backup_path
 
 
 def create_backup(now: datetime | None = None) -> Path:

@@ -32,6 +32,8 @@ BACKUP_DIRECTORIES: list[str] = [
     for item in os.getenv("BACKUP_HUB_DIRECTORIES", "").split(",")
     if item.strip()
 ]
+USE_NGINX_ACCEL: bool = os.getenv("BACKUP_HUB_USE_NGINX_ACCEL", "NO").upper() == "YES"
+STRICT_SECURITY: bool = os.getenv("BACKUP_HUB_STRICT_SECURITY", "NO").upper() == "YES"
 
 if not CORS_ALLOWEDS:
     cors_defaults: set[str] = {

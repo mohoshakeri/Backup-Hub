@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Response, status
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
@@ -8,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from services.auth import create_session_token, validate_password, validate_session_token, validate_totp
 from services.backups import get_backup_or_none, list_backups
 from services.download_tokens import create_download_token, validate_download_token
-from utils.config import COOKIE_SECURE, FAVICON_URL, LOGO_URL, PROJECT_ROOT, SESSION_COOKIE
+from utils.config import COOKIE_SECURE, FAVICON_URL, LOGO_URL, PROJECT_ROOT, SESSION_COOKIE, USE_NGINX_ACCEL
 
 router: APIRouter = APIRouter(tags=["Web"])
 templates: Jinja2Templates = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
@@ -95,6 +96,9 @@ async def download_backup(filename: str, token: str = "") -> Response:
     if not backup_path:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
+    if USE_NGINX_ACCEL:
+        return _nginx_download_response(backup_path=backup_path)
+
     return FileResponse(
         path=backup_path,
         filename=backup_path.name,
@@ -105,6 +109,17 @@ async def download_backup(filename: str, token: str = "") -> Response:
 def _is_authenticated(request: Request) -> bool:
     token: str | None = request.cookies.get(SESSION_COOKIE)
     return validate_session_token(token=token)
+
+
+def _nginx_download_response(backup_path: Path) -> Response:
+    return Response(
+        status_code=status.HTTP_200_OK,
+        headers={
+            "X-Accel-Redirect": "/_protected_backups/{}".format(quote(backup_path.name)),
+            "Content-Disposition": 'attachment; filename="{}"'.format(backup_path.name),
+            "Content-Type": "application/octet-stream",
+        },
+    )
 
 
 def _login_page(

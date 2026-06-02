@@ -93,6 +93,23 @@ class BackupsTestCase(unittest.TestCase):
                 self.assertEqual(backups.get_backup_or_none(filename=backup_path.name), backup_path)
                 self.assertIsNone(backups.get_backup_or_none(filename="../BACKUP-2025-01-01-12:12.zip"))
 
+    def test_get_backup_rejects_symlink_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path: Path = Path(temp_dir)
+            backups_dir: Path = temp_path / "backups"
+            backups_dir.mkdir()
+            outside_file: Path = temp_path / "outside.zip"
+            outside_file.write_text("secret", encoding="utf-8")
+            symlink_path: Path = backups_dir / "BACKUP-2025-01-01-12:12.zip"
+
+            try:
+                symlink_path.symlink_to(outside_file)
+            except OSError:
+                self.skipTest("symlink is not supported on this filesystem")
+
+            with patch.object(backups, "BACKUPS_DIR", backups_dir):
+                self.assertIsNone(backups.get_backup_or_none(filename=symlink_path.name))
+
     @contextmanager
     def _backup_patches(self, tmp_dir: Path, backups_dir: Path, source_dir: Path, max_backups: int) -> Iterator[None]:
         clean_env: dict[str, str] = {key: value for key, value in os.environ.items() if key not in DATABASE_ENV_KEYS}
