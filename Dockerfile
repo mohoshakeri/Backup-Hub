@@ -27,7 +27,7 @@ RUN sed -i 's/deb.debian.org/mirror-linux.runflare.com/g' /etc/apt/sources.list.
 
 # Install System Dependencies
 RUN apt-get update -o Acquire::Check-Valid-Until=false \
-    && apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client postgresql-client tzdata -o Acquire::Check-Valid-Until=false \
+    && apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client postgresql-client tzdata unzip -o Acquire::Check-Valid-Until=false \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -43,7 +43,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone
 
 # Install MongoDB Tools
-RUN curl -fsSL "$MONGO_TOOLS_URL" -o /tmp/mongodb-database-tools.tgz \
+RUN curl -fsSL "$MONGO_TOOLS_URL" -o /tmp/mongodb-database-tools.download \
+    && if tar -tzf /tmp/mongodb-database-tools.download >/dev/null 2>&1; then mv /tmp/mongodb-database-tools.download /tmp/mongodb-database-tools.tgz; else unzip -p /tmp/mongodb-database-tools.download > /tmp/mongodb-database-tools.tgz; fi \
     && tar -xzf /tmp/mongodb-database-tools.tgz -C /tmp \
     && cp /tmp/mongodb-database-tools-debian12-x86_64-${MONGO_TOOLS_VERSION}/bin/* /usr/local/bin/ \
     && rm -rf /tmp/mongodb-database-tools*
