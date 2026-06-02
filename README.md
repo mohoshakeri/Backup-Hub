@@ -2,7 +2,7 @@
 
 Backup Hub is a small FastAPI application for scheduled, encrypted backups with a clean web dashboard for listing and downloading backup archives.
 
-![img.png](static/Screenshot.png)
+![img.png](static/img/Screenshot.png)
 
 ## Features
 
