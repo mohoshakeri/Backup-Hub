@@ -58,12 +58,12 @@ BASE_URL=http://localhost:8989
 CORS_ALLOWEDS=http://localhost:8989,http://127.0.0.1:8989
 ```
 
-| Variable | Default | What It Does |
-| --- | --- | --- |
-| `DEBUG` | `NO` | Enables FastAPI debug/reload behavior when set to `YES`. Keep `NO` in production. |
-| `PORT` | `8989` | App port for local Uvicorn runs. In Docker, Nginx listens on port `80`. |
+| Variable | Default                   | What It Does |
+| --- |---------------------------| --- |
+| `DEBUG` | `NO`                      | Enables FastAPI debug/reload behavior when set to `YES`. Keep `NO` in production. |
+| `PORT` | `8000`                    | App port for local Uvicorn runs. In Docker, Nginx listens on port `80`. |
 | `BASE_URL` | `http://localhost:<PORT>` | Public base URL used to derive default CORS origins. |
-| `CORS_ALLOWEDS` | derived from `BASE_URL` | Comma-separated allowed browser origins. |
+| `CORS_ALLOWEDS` | derived from `BASE_URL`   | Comma-separated allowed browser origins. |
 
 ### Backup Runtime
 

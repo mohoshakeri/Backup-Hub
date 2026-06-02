@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Callable
 
-from CONSTANTS import DEFAULT_BACKUP_CRON, DEFAULT_MAX_BACKUPS, DEFAULT_PORT, DEFAULT_ICON, DEFAULT_LOGO
+from CONSTANTS import DEFAULT_BACKUP_CRON, DEFAULT_MAX_BACKUPS, DEFAULT_UVICORN_PORT, DEFAULT_ICON, DEFAULT_LOGO
 
 try:
     from dotenv import load_dotenv
@@ -19,8 +19,8 @@ FS_ROOT: Path = PROJECT_ROOT / "fs"
 TMP_DIR: Path = FS_ROOT / "tmp"
 BACKUPS_DIR: Path = FS_ROOT / "backups"
 DEBUG: bool = os.getenv("DEBUG", "NO").upper() == "YES"
-PORT: int = int(os.getenv("PORT", str(DEFAULT_PORT)))
-BASE_URL: str = os.getenv("BASE_URL", "http://localhost:{}".format(PORT)).strip()
+UVICORN_PORT: int = int(os.getenv("UVICORN_PORT", str(DEFAULT_UVICORN_PORT)))
+BASE_URL: str = os.getenv("BASE_URL", "http://localhost:{}".format(UVICORN_PORT)).strip()
 CORS_ALLOWEDS: list[str] = [item.strip() for item in os.getenv("CORS_ALLOWEDS", "").split(",") if item.strip()]
 LOGO_URL: str = os.getenv("BACKUP_HUB_LOGO_URL", DEFAULT_LOGO).strip()
 FAVICON_URL: str = os.getenv("BACKUP_HUB_FAVICON_URL", DEFAULT_ICON).strip()

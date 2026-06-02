@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core.logging import configure_logging
 from core.security import validate_security_settings
-from utils.config import DEBUG, PORT, PROJECT_ROOT
+from utils.config import DEBUG, UVICORN_PORT, PROJECT_ROOT
 from utils.middlewares import register_middlewares
 from utils.routes import router
 
@@ -27,6 +27,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=PORT,
+        port=UVICORN_PORT,
         reload=DEBUG,
     )
