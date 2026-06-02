@@ -94,11 +94,29 @@ If `MYSQL_DATABASES` is empty, Backup Hub discovers all user databases and skips
 MongoDB:
 
 ```env
-MONGO_URI=mongodb://mongo:27017
+MONGO_URI=mongodb://admin:password@mongo:27017/?authSource=admin&authMechanism=SCRAM-SHA-256
 MONGO_DATABASES=db1,db2
 ```
 
 MongoDB only uses `MONGO_URI` and `MONGO_DATABASES`. Host, port, username, and password are expected to be part of the URI when needed.
+
+For authenticated MongoDB connections, include `authSource` in the URI. If your MongoDB user is created in the `admin` database, use `authSource=admin`. It is also recommended to set the authentication mechanism explicitly, usually `authMechanism=SCRAM-SHA-256`.
+
+When `MONGO_DATABASES` is set, do not put a database name in the URI path. `mongodump` receives the target database through `--db`, and it fails if the URI path points to a different database.
+
+Correct:
+
+```env
+MONGO_URI=mongodb://admin:password@mongo:27017/?authSource=admin&authMechanism=SCRAM-SHA-256
+MONGO_DATABASES=braintest
+```
+
+Wrong:
+
+```env
+MONGO_URI=mongodb://admin:password@mongo:27017/admin?authSource=admin&authMechanism=SCRAM-SHA-256
+MONGO_DATABASES=braintest
+```
 
 ## Docker
 
