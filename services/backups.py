@@ -14,13 +14,16 @@ def list_backups() -> list[Path]:
     backups: list[Path] = [
         item
         for item in BACKUPS_DIR.iterdir()
-        if item.is_file() and item.name.startswith(BACKUP_FILENAME_PREFIX)
+        if item.is_file() and not item.is_symlink() and _is_backup_filename(filename=item.name)
     ]
     return sorted(backups, key=lambda item: item.stat().st_mtime, reverse=True)
 
 
 def get_backup_or_none(filename: str) -> Path | None:
     if filename != Path(filename).name:
+        return None
+
+    if not _is_backup_filename(filename=filename):
         return None
 
     backup_path: Path = BACKUPS_DIR / filename
@@ -114,7 +117,7 @@ def _backup_directories(backup_root: Path) -> None:
         target_path: Path = disks_root / relative_target
 
         if source_path.is_dir():
-            shutil.copytree(source_path, target_path, dirs_exist_ok=True)
+            shutil.copytree(source_path, target_path, dirs_exist_ok=True, symlinks=True)
             logger.info("Disk backup item finished: source=%s target=%s type=directory", source_path, target_path)
             continue
 
@@ -138,7 +141,7 @@ def _write_encrypted_zip(source_dir: Path, archive_path: Path) -> None:
         zip_file.setpassword(AES_ZIP_KEY.encode("utf-8"))
 
         for item in sorted(source_dir.rglob("*")):
-            if not item.is_file():
+            if item.is_symlink() or not item.is_file():
                 continue
 
             zip_file.write(item, item.relative_to(source_dir.parent))
@@ -177,3 +180,7 @@ def _clear_tmp() -> None:
         removed_items_count += 1
 
     logger.info("Temporary directory cleared: path=%s removed_items=%s", TMP_DIR, removed_items_count)
+
+
+def _is_backup_filename(filename: str) -> bool:
+    return filename.startswith(BACKUP_FILENAME_PREFIX) and filename.endswith(BACKUP_FILE_EXTENSION)

@@ -25,6 +25,17 @@ def create_session_token() -> str:
     return "{}{}{}".format(payload_text, SESSION_SIGNER_SEPARATOR, signature)
 
 
+def create_csrf_token(session_token: str) -> str:
+    return _sign("csrf:{}".format(session_token))
+
+
+def validate_csrf_token(session_token: str | None, csrf_token: str) -> bool:
+    if not session_token or not csrf_token or not validate_session_token(token=session_token):
+        return False
+
+    return hmac.compare_digest(create_csrf_token(session_token=session_token), csrf_token)
+
+
 def validate_session_token(token: str | None) -> bool:
     if not token or SESSION_SIGNER_SEPARATOR not in token:
         return False

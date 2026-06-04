@@ -3,6 +3,7 @@ import re
 import subprocess
 from pathlib import Path
 
+from utils.config import BACKUP_COMMAND_TIMEOUT_SECONDS
 from core.logging import get_logger
 
 logger = get_logger("backup_providers.common")
@@ -30,13 +31,18 @@ def run_command(command: list[str], env: dict[str, str] | None = None) -> None:
         process_env.update(env)
 
     logger.info("Command running: executable=%s args_count=%s", command[0], len(command))
-    result: subprocess.CompletedProcess[str] = subprocess.run(
-        command,
-        check=False,
-        env=process_env,
-        text=True,
-        capture_output=True,
-    )
+    try:
+        result: subprocess.CompletedProcess[str] = subprocess.run(
+            command,
+            check=False,
+            env=process_env,
+            text=True,
+            capture_output=True,
+            timeout=BACKUP_COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        logger.error("Command timed out: executable=%s timeout_seconds=%s", command[0], BACKUP_COMMAND_TIMEOUT_SECONDS)
+        raise RuntimeError("Command timed out after {} seconds".format(BACKUP_COMMAND_TIMEOUT_SECONDS)) from exc
 
     if result.returncode == 0:
         logger.info("Command finished: executable=%s returncode=%s", command[0], result.returncode)
@@ -57,9 +63,15 @@ def sanitize_command_output(message: str) -> str:
 
 def safe_host_dir(host: str, port: str | None = None) -> str:
     if port:
-        return "{}_{}".format(host.replace("/", "_"), port)
+        return "{}_{}".format(safe_path_component(host), safe_path_component(port))
 
-    return host.replace("/", "_")
+    return safe_path_component(host)
+
+
+def safe_path_component(value: str) -> str:
+    cleaned_value: str = re.sub(r"[^A-Za-z0-9_.:@-]+", "_", value.strip())
+    cleaned_value = cleaned_value.strip("._")
+    return cleaned_value or "unnamed"
 
 
 def ensure_parent(path: Path) -> None:

@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from backup_providers.base import BackupContext
-from backup_providers.common import run_command, split_csv
+from backup_providers.common import run_command, safe_path_component, split_csv
 from core.logging import get_logger
 
 logger = get_logger("mongodb.backup_provider")
@@ -25,7 +25,7 @@ class MongoBackupProvider:
         logger.info("MongoDB backup started: databases=%s root=%s", len(self.databases), context.root_dir)
 
         for database in self.databases:
-            output_dir: Path = context.root_dir / "databases" / self.name / "mongo_uri" / database
+            output_dir: Path = context.root_dir / "databases" / self.name / "mongo_uri" / safe_path_component(database)
             output_dir.mkdir(parents=True, exist_ok=True)
             logger.info("MongoDB database dump started: database=%s output=%s", database, output_dir)
 

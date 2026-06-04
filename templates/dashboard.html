@@ -18,6 +18,7 @@
             </div>
         </div>
         <form method="post" action="/logout">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="secondary-button" type="submit">خروج</button>
         </form>
     </header>
@@ -90,6 +91,7 @@
 
 <dialog class="totp-dialog" id="totpDialog">
     <form method="post" data-loading-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="dialog-header">
             <span class="secure-badge">2FA</span>
             <button class="icon-button" value="cancel" formmethod="dialog" aria-label="بستن">×</button>

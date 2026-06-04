@@ -3,8 +3,9 @@ import subprocess
 from pathlib import Path
 
 from backup_providers.base import BackupContext
-from backup_providers.common import ensure_parent, safe_host_dir, sanitize_command_output, split_csv
+from backup_providers.common import ensure_parent, safe_host_dir, safe_path_component, sanitize_command_output, split_csv
 from core.logging import get_logger
+from utils.config import BACKUP_COMMAND_TIMEOUT_SECONDS
 
 logger = get_logger("postgres.backup_provider")
 
@@ -36,7 +37,7 @@ class PostgresBackupProvider:
                 / "databases"
                 / self.name
                 / safe_host_dir(self.host, self.port)
-                / "{}.dump".format(database)
+                / "{}.dump".format(safe_path_component(database))
             )
             ensure_parent(output_path)
             command: list[str] = [
@@ -87,13 +88,18 @@ class PostgresBackupProvider:
         env: dict[str, str] = os.environ.copy()
         env["PGPASSWORD"] = self.password
         logger.info("Postgres command running: executable=%s capture=%s", command[0], capture)
-        result: subprocess.CompletedProcess[str] = subprocess.run(
-            command,
-            check=False,
-            env=env,
-            text=True,
-            capture_output=True,
-        )
+        try:
+            result: subprocess.CompletedProcess[str] = subprocess.run(
+                command,
+                check=False,
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=BACKUP_COMMAND_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as exc:
+            logger.error("Postgres command timed out: executable=%s timeout_seconds=%s", command[0], BACKUP_COMMAND_TIMEOUT_SECONDS)
+            raise RuntimeError("Postgres command timed out after {} seconds".format(BACKUP_COMMAND_TIMEOUT_SECONDS)) from exc
 
         if result.returncode == 0:
             logger.info("Postgres command finished: executable=%s returncode=%s", command[0], result.returncode)

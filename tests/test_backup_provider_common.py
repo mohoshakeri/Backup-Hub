@@ -1,6 +1,6 @@
 import unittest
 
-from backup_providers.common import sanitize_command_output
+from backup_providers.common import safe_path_component, sanitize_command_output
 
 
 class BackupProviderCommonTestCase(unittest.TestCase):
@@ -43,3 +43,7 @@ class BackupProviderCommonTestCase(unittest.TestCase):
         self.assertIn('"password":"***"', sanitized_message)
         self.assertIn('"token":"***"', sanitized_message)
         self.assertIn('"safe":"value"', sanitized_message)
+
+    def test_safe_path_component_removes_path_separators(self) -> None:
+        self.assertEqual(safe_path_component("../db/name"), "db_name")
+        self.assertEqual(safe_path_component(""), "unnamed")

@@ -21,8 +21,7 @@ WORKDIR /app
 
 # Configure APT Mirrors
 RUN sed -i 's/deb.debian.org/mirror-linux.runflare.com/g' /etc/apt/sources.list.d/debian.sources \
-    && sed -i 's/security.debian.org/mirror-linux.runflare.com/g' /etc/apt/sources.list.d/debian.sources \
-    && sed -i 's/https/http/g' /etc/apt/sources.list.d/debian.sources
+    && sed -i 's/security.debian.org/mirror-linux.runflare.com/g' /etc/apt/sources.list.d/debian.sources
 
 # Install System Dependencies
 RUN apt-get update -o Acquire::Check-Valid-Until=false \

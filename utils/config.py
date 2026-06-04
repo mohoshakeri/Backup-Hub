@@ -2,7 +2,14 @@ import os
 from pathlib import Path
 from typing import Callable
 
-from CONSTANTS import DEFAULT_BACKUP_CRON, DEFAULT_MAX_BACKUPS, DEFAULT_UVICORN_PORT, DEFAULT_ICON, DEFAULT_LOGO
+from CONSTANTS import (
+    DEFAULT_BACKUP_COMMAND_TIMEOUT_SECONDS,
+    DEFAULT_BACKUP_CRON,
+    DEFAULT_ICON,
+    DEFAULT_LOGO,
+    DEFAULT_MAX_BACKUPS,
+    DEFAULT_UVICORN_PORT,
+)
 
 try:
     from dotenv import load_dotenv
@@ -26,6 +33,9 @@ LOGO_URL: str = os.getenv("BACKUP_HUB_LOGO_URL", DEFAULT_LOGO).strip()
 FAVICON_URL: str = os.getenv("BACKUP_HUB_FAVICON_URL", DEFAULT_ICON).strip()
 BACKUP_CRON: str = os.getenv("BACKUP_HUB_CRON", DEFAULT_BACKUP_CRON).strip()
 MAX_BACKUPS: int = int(os.getenv("BACKUP_HUB_MAX_BACKUPS", str(DEFAULT_MAX_BACKUPS)))
+BACKUP_COMMAND_TIMEOUT_SECONDS: int = int(
+    os.getenv("BACKUP_HUB_COMMAND_TIMEOUT_SECONDS", str(DEFAULT_BACKUP_COMMAND_TIMEOUT_SECONDS))
+)
 AES_ZIP_KEY: str = os.getenv("BACKUP_HUB_AES_ZIP_KEY", "").strip()
 BACKUP_DIRECTORIES: list[str] = [
     item.strip()

@@ -3,8 +3,9 @@ import subprocess
 from pathlib import Path
 
 from backup_providers.base import BackupContext
-from backup_providers.common import ensure_parent, safe_host_dir, sanitize_command_output, split_csv
+from backup_providers.common import ensure_parent, safe_host_dir, safe_path_component, sanitize_command_output, split_csv
 from core.logging import get_logger
+from utils.config import BACKUP_COMMAND_TIMEOUT_SECONDS
 
 logger = get_logger("mysql.backup_provider")
 
@@ -36,7 +37,7 @@ class MySqlBackupProvider:
                 / "databases"
                 / self.name
                 / safe_host_dir(self.host, self.port)
-                / "{}.sql".format(database)
+                / "{}.sql".format(safe_path_component(database))
             )
             ensure_parent(output_path)
             command: list[str] = [
@@ -44,7 +45,6 @@ class MySqlBackupProvider:
                 "--host={}".format(self.host),
                 "--port={}".format(self.port),
                 "--user={}".format(self.user),
-                "--password={}".format(self.password),
                 "--single-transaction",
                 "--routines",
                 "--triggers",
@@ -66,18 +66,26 @@ class MySqlBackupProvider:
             "--host={}".format(self.host),
             "--port={}".format(self.port),
             "--user={}".format(self.user),
-            "--password={}".format(self.password),
             "--batch",
             "--skip-column-names",
             "--execute",
             "SHOW DATABASES;",
         ]
-        result: subprocess.CompletedProcess[str] = subprocess.run(
-            command,
-            check=False,
-            text=True,
-            capture_output=True,
-        )
+        env: dict[str, str] = os.environ.copy()
+        env["MYSQL_PWD"] = self.password
+
+        try:
+            result: subprocess.CompletedProcess[str] = subprocess.run(
+                command,
+                check=False,
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=BACKUP_COMMAND_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as exc:
+            logger.error("MySQL database discovery timed out: timeout_seconds=%s", BACKUP_COMMAND_TIMEOUT_SECONDS)
+            raise RuntimeError("MySQL database list timed out after {} seconds".format(BACKUP_COMMAND_TIMEOUT_SECONDS)) from exc
 
         if result.returncode != 0:
             message: str = sanitize_command_output(result.stderr.strip() or result.stdout.strip() or "MySQL database list failed")
@@ -91,14 +99,23 @@ class MySqlBackupProvider:
 
     def _run_to_file(self, command: list[str], output_path: Path) -> None:
         logger.info("MySQL command running: executable=%s output=%s", command[0], output_path)
+        env: dict[str, str] = os.environ.copy()
+        env["MYSQL_PWD"] = self.password
+
         with output_path.open("w", encoding="utf-8") as output_file:
-            result: subprocess.CompletedProcess[str] = subprocess.run(
-                command,
-                check=False,
-                text=True,
-                stdout=output_file,
-                stderr=subprocess.PIPE,
-            )
+            try:
+                result: subprocess.CompletedProcess[str] = subprocess.run(
+                    command,
+                    check=False,
+                    env=env,
+                    text=True,
+                    stdout=output_file,
+                    stderr=subprocess.PIPE,
+                    timeout=BACKUP_COMMAND_TIMEOUT_SECONDS,
+                )
+            except subprocess.TimeoutExpired as exc:
+                logger.error("MySQL command timed out: executable=%s timeout_seconds=%s", command[0], BACKUP_COMMAND_TIMEOUT_SECONDS)
+                raise RuntimeError("MySQL command timed out after {} seconds".format(BACKUP_COMMAND_TIMEOUT_SECONDS)) from exc
 
         if result.returncode == 0:
             logger.info("MySQL command finished: executable=%s returncode=%s", command[0], result.returncode)

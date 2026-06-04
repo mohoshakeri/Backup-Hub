@@ -70,6 +70,7 @@ CORS_ALLOWEDS=http://localhost:8989,http://127.0.0.1:8989
 ```env
 BACKUP_HUB_CRON=0 3 * * *
 BACKUP_HUB_MAX_BACKUPS=5
+BACKUP_HUB_COMMAND_TIMEOUT_SECONDS=3600
 BACKUP_HUB_AES_ZIP_KEY=change-me-to-a-long-secret
 BACKUP_HUB_DIRECTORIES=/data1/f,/data2/f
 BACKUP_HUB_USE_NGINX_ACCEL=YES
@@ -80,6 +81,7 @@ BACKUP_HUB_STRICT_SECURITY=YES
 | --- | --- | --- |
 | `BACKUP_HUB_CRON` | `0 3 * * *` | Supercronic schedule for automatic backup jobs. Default is every day at 03:00. |
 | `BACKUP_HUB_MAX_BACKUPS` | `5` | Maximum number of archives to keep. When the limit is reached, the oldest archive is deleted before creating a new one. |
+| `BACKUP_HUB_COMMAND_TIMEOUT_SECONDS` | `3600` | Maximum runtime for each external dump command before it is stopped and reported as failed. |
 | `BACKUP_HUB_AES_ZIP_KEY` | empty | AES password for encrypted ZIP archives. Required for backup creation. |
 | `BACKUP_HUB_DIRECTORIES` | empty | Comma-separated filesystem paths to include under `disks/` in the archive. Mount these paths into Docker as volumes or disks. |
 | `BACKUP_HUB_USE_NGINX_ACCEL` | `NO` | Uses Nginx `X-Accel-Redirect` for faster protected downloads. Set to `YES` when running with the provided Docker/Nginx setup. |
@@ -89,9 +91,9 @@ BACKUP_HUB_STRICT_SECURITY=YES
 
 ```env
 BACKUP_HUB_USERNAME=admin
-BACKUP_HUB_PASSWORD=change-me
-BACKUP_HUB_TOTP_SECRET=JBSWY3DPEHPK3PXP
-BACKUP_HUB_SESSION_SECRET=change-me
+BACKUP_HUB_PASSWORD=change-me-to-a-long-random-password
+BACKUP_HUB_TOTP_SECRET=KRUGS4ZANFZSAYJAON2GK3TUNFXW4ZLS
+BACKUP_HUB_SESSION_SECRET=change-me-to-a-long-random-session-secret
 BACKUP_HUB_SESSION_COOKIE=backup_hub_session
 BACKUP_HUB_COOKIE_SECURE=YES
 BACKUP_HUB_SESSION_TTL_SECONDS=28800
@@ -100,11 +102,11 @@ BACKUP_HUB_SESSION_TTL_SECONDS=28800
 | Variable | Default | What It Does |
 | --- | --- | --- |
 | `BACKUP_HUB_USERNAME` | `admin` | Username for the web login form. |
-| `BACKUP_HUB_PASSWORD` | `1234` | Password for the web login form. Must be changed in production. |
-| `BACKUP_HUB_TOTP_SECRET` | demo secret | Base32 TOTP secret used before download links are generated. Must be changed in production. |
-| `BACKUP_HUB_SESSION_SECRET` | demo secret | HMAC secret for signed web sessions and JWT download links. Must be long and private. |
+| `BACKUP_HUB_PASSWORD` | `1234` | Password for the web login form. Must be changed in production; strict mode requires at least 12 characters. |
+| `BACKUP_HUB_TOTP_SECRET` | demo secret | Base32 TOTP secret used before download links are generated. Must be changed in production; strict mode validates length and format. |
+| `BACKUP_HUB_SESSION_SECRET` | demo secret | HMAC secret for signed web sessions, CSRF tokens, and JWT download links. Must be long and private; strict mode requires at least 32 characters. |
 | `BACKUP_HUB_SESSION_COOKIE` | `slv_session` | Cookie name for the signed session token. |
-| `BACKUP_HUB_COOKIE_SECURE` | `NO` | Sets the session cookie `Secure` flag. Use `YES` behind HTTPS. |
+| `BACKUP_HUB_COOKIE_SECURE` | `NO` | Sets the session cookie `Secure` flag. Use `YES` behind HTTPS; strict mode requires it. |
 | `BACKUP_HUB_SESSION_TTL_SECONDS` | `900` | Web session lifetime in seconds. |
 | `BACKUP_HUB_LOGO_URL` | local default | Logo URL used on the login/dashboard UI. |
 | `BACKUP_HUB_FAVICON_URL` | local default | Favicon URL used by the browser. |

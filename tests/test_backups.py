@@ -92,6 +92,7 @@ class BackupsTestCase(unittest.TestCase):
             with patch.object(backups, "BACKUPS_DIR", backups_dir):
                 self.assertEqual(backups.get_backup_or_none(filename=backup_path.name), backup_path)
                 self.assertIsNone(backups.get_backup_or_none(filename="../BACKUP-2025-01-01-12:12.zip"))
+                self.assertIsNone(backups.get_backup_or_none(filename="BACKUP-2025-01-01-12:12.txt"))
 
     def test_get_backup_rejects_symlink_escape(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

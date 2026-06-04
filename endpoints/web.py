@@ -6,10 +6,25 @@ from fastapi import APIRouter, Request, Response, status
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from services.auth import create_session_token, validate_password, validate_session_token, validate_totp
+from services.auth import (
+    create_csrf_token,
+    create_session_token,
+    validate_csrf_token,
+    validate_password,
+    validate_session_token,
+    validate_totp,
+)
 from services.backups import get_backup_or_none, list_backups
 from services.download_tokens import create_download_token, validate_download_token
-from utils.config import COOKIE_SECURE, FAVICON_URL, LOGO_URL, PROJECT_ROOT, SESSION_COOKIE, USE_NGINX_ACCEL
+from utils.config import (
+    COOKIE_SECURE,
+    FAVICON_URL,
+    LOGO_URL,
+    PROJECT_ROOT,
+    SESSION_COOKIE,
+    SESSION_TTL_SECONDS,
+    USE_NGINX_ACCEL,
+)
 
 router: APIRouter = APIRouter(tags=["Web"])
 templates: Jinja2Templates = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
@@ -44,14 +59,20 @@ async def login(request: Request) -> Response:
         httponly=True,
         secure=COOKIE_SECURE,
         samesite="lax",
+        max_age=SESSION_TTL_SECONDS,
     )
     return response
 
 
 @router.post("/logout")
-async def logout() -> Response:
+async def logout(request: Request) -> Response:
+    form = await request.form()
+
+    if not _has_valid_csrf(request=request, csrf_token=str(form.get("csrf_token", ""))):
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
     response: RedirectResponse = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie(key=SESSION_COOKIE)
+    response.delete_cookie(key=SESSION_COOKIE, secure=COOKIE_SECURE, samesite="lax")
     return response
 
 
@@ -61,6 +82,15 @@ async def create_download_link(filename: str, request: Request) -> Response:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
     form = await request.form()
+
+    if not _has_valid_csrf(request=request, csrf_token=str(form.get("csrf_token", ""))):
+        return _dashboard_page(
+            request=request,
+            backups=list_backups(),
+            error_message="درخواست معتبر نیست. صفحه را دوباره بارگذاری کن.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
     totp_code: str = str(form.get("totp", ""))
 
     if not validate_totp(code=totp_code):
@@ -111,6 +141,11 @@ def _is_authenticated(request: Request) -> bool:
     return validate_session_token(token=token)
 
 
+def _has_valid_csrf(request: Request, csrf_token: str) -> bool:
+    session_token: str | None = request.cookies.get(SESSION_COOKIE)
+    return validate_csrf_token(session_token=session_token, csrf_token=csrf_token)
+
+
 def _nginx_download_response(backup_path: Path) -> Response:
     return Response(
         status_code=status.HTTP_200_OK,
@@ -146,10 +181,12 @@ def _dashboard_page(
 
 
 def _base_context(request: Request) -> dict[str, Any]:
+    session_token: str | None = request.cookies.get(SESSION_COOKIE)
     return {
         "request": request,
         "favicon_url": FAVICON_URL,
         "logo_url": LOGO_URL,
+        "csrf_token": create_csrf_token(session_token=session_token) if session_token and validate_session_token(session_token) else "",
     }
 
 
