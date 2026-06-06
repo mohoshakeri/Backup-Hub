@@ -25,6 +25,7 @@
         {% endif %}
 
         <form class="form-stack" method="post" action="/login" data-loading-form>
+            <input type="hidden" name="login_csrf_token" value="{{ login_csrf_token }}">
             <label class="field">
                 <span>نام کاربری</span>
                 <input name="username" autocomplete="username" required>

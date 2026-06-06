@@ -24,7 +24,10 @@ class OriginValidationMiddleware(BaseHTTPMiddleware):
         if request.method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
             origin: str | None = request.headers.get("origin")
 
-            if origin and origin not in _allowed_origins(request=request):
+            if origin == "null" and _has_route_level_csrf(request=request):
+                return await call_next(request)
+
+            if origin and not _is_allowed_origin(request=request, origin=origin):
                 return Response(status_code=403)
 
         return await call_next(request)
@@ -56,6 +59,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def _allowed_origins(request: Request) -> set[str]:
+    scheme: str = request.headers.get("x-forwarded-proto", request.url.scheme).split(",", 1)[0].strip()
     host: str = request.headers.get("host", "")
-    request_origin: str = "{}://{}".format(request.url.scheme, host) if host else ""
-    return {origin for origin in [*CORS_ALLOWEDS, request_origin] if origin}
+    forwarded_host: str = request.headers.get("x-forwarded-host", "").split(",", 1)[0].strip()
+    request_origin: str = "{}://{}".format(scheme, host) if host else ""
+    forwarded_origin: str = "{}://{}".format(scheme, forwarded_host) if forwarded_host else ""
+    return {origin for origin in [*CORS_ALLOWEDS, request_origin, forwarded_origin] if origin}
+
+
+def _is_allowed_origin(request: Request, origin: str) -> bool:
+    return origin in _allowed_origins(request=request)
+
+
+def _has_route_level_csrf(request: Request) -> bool:
+    path: str = request.url.path
+
+    if path in {"/login", "/logout"}:
+        return True
+
+    return path.startswith("/backups/") and path.endswith("/download")

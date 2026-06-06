@@ -8,7 +8,9 @@ from fastapi.templating import Jinja2Templates
 
 from services.auth import (
     create_csrf_token,
+    create_login_csrf_token,
     create_session_token,
+    validate_login_csrf_token,
     validate_csrf_token,
     validate_password,
     validate_session_token,
@@ -28,6 +30,7 @@ from utils.config import (
 
 router: APIRouter = APIRouter(tags=["Web"])
 templates: Jinja2Templates = Jinja2Templates(directory=str(PROJECT_ROOT / "templates"))
+LOGIN_CSRF_COOKIE: str = "{}_login_csrf".format(SESSION_COOKIE)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -42,6 +45,18 @@ async def index(request: Request) -> HTMLResponse:
 @router.post("/login")
 async def login(request: Request) -> Response:
     form = await request.form()
+    login_csrf_token: str = str(form.get("login_csrf_token", ""))
+
+    if not validate_login_csrf_token(
+        cookie_token=request.cookies.get(LOGIN_CSRF_COOKIE),
+        form_token=login_csrf_token,
+    ):
+        return _login_page(
+            request=request,
+            error_message="درخواست ورود معتبر نیست. صفحه را دوباره بارگذاری کن.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
     username: str = str(form.get("username", ""))
     password: str = str(form.get("password", ""))
 
@@ -61,6 +76,7 @@ async def login(request: Request) -> Response:
         samesite="lax",
         max_age=SESSION_TTL_SECONDS,
     )
+    response.delete_cookie(key=LOGIN_CSRF_COOKIE, secure=COOKIE_SECURE, samesite="lax")
     return response
 
 
@@ -162,9 +178,20 @@ def _login_page(
     error_message: str = "",
     status_code: int = status.HTTP_200_OK,
 ) -> HTMLResponse:
+    login_csrf_token: str = create_login_csrf_token()
     context: dict[str, Any] = _base_context(request=request)
     context["error_message"] = error_message
-    return templates.TemplateResponse("login.html", context, status_code=status_code)
+    context["login_csrf_token"] = login_csrf_token
+    response: HTMLResponse = templates.TemplateResponse("login.html", context, status_code=status_code)
+    response.set_cookie(
+        key=LOGIN_CSRF_COOKIE,
+        value=login_csrf_token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+        max_age=600,
+    )
+    return response
 
 
 def _dashboard_page(

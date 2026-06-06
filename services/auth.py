@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from typing import Any
 
@@ -9,10 +10,49 @@ from CONSTANTS import SESSION_SIGNER_SEPARATOR
 from utils.config import AUTH_PASSWORD, AUTH_USERNAME, SESSION_SECRET, SESSION_TTL_SECONDS, TOTP_SECRET
 
 
+LOGIN_CSRF_TTL_SECONDS: int = 10 * 60
+
+
 def validate_password(username: str, password: str) -> bool:
     valid_username: bool = hmac.compare_digest(username, AUTH_USERNAME)
     valid_password: bool = hmac.compare_digest(password, AUTH_PASSWORD)
     return valid_username and valid_password
+
+
+def create_login_csrf_token() -> str:
+    payload: dict[str, Any] = {
+        "purpose": "login_csrf",
+        "nonce": secrets.token_urlsafe(32),
+        "expires_at": int(time.time()) + LOGIN_CSRF_TTL_SECONDS,
+    }
+    payload_text: str = _encode_json(payload)
+    signature: str = _sign(payload_text)
+    return "{}{}{}".format(payload_text, SESSION_SIGNER_SEPARATOR, signature)
+
+
+def validate_login_csrf_token(cookie_token: str | None, form_token: str) -> bool:
+    if not cookie_token or not form_token or not hmac.compare_digest(cookie_token, form_token):
+        return False
+
+    if SESSION_SIGNER_SEPARATOR not in form_token:
+        return False
+
+    payload_text: str
+    signature: str
+    payload_text, signature = form_token.rsplit(SESSION_SIGNER_SEPARATOR, 1)
+
+    if not hmac.compare_digest(_sign(payload_text), signature):
+        return False
+
+    try:
+        payload: dict[str, Any] = json.loads(_decode(payload_text))
+    except (ValueError, json.JSONDecodeError):
+        return False
+
+    expires_at: int = int(payload.get("expires_at", 0))
+    purpose: str = str(payload.get("purpose", ""))
+    nonce: str = str(payload.get("nonce", ""))
+    return purpose == "login_csrf" and bool(nonce) and expires_at > int(time.time())
 
 
 def create_session_token() -> str:

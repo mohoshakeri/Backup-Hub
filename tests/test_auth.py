@@ -28,3 +28,15 @@ class AuthTestCase(unittest.TestCase):
         self.assertTrue(auth.validate_csrf_token(session_token=session_token, csrf_token=csrf_token))
         self.assertFalse(auth.validate_csrf_token(session_token=session_token, csrf_token="bad-token"))
         self.assertFalse(auth.validate_csrf_token(session_token="bad-session", csrf_token=csrf_token))
+
+    def test_login_csrf_token_round_trip(self) -> None:
+        token: str = auth.create_login_csrf_token()
+
+        self.assertTrue(auth.validate_login_csrf_token(cookie_token=token, form_token=token))
+        self.assertFalse(auth.validate_login_csrf_token(cookie_token=token, form_token="bad-token"))
+
+    def test_login_csrf_token_expires(self) -> None:
+        with patch.object(auth, "LOGIN_CSRF_TTL_SECONDS", -1):
+            token: str = auth.create_login_csrf_token()
+
+        self.assertFalse(auth.validate_login_csrf_token(cookie_token=token, form_token=token))
